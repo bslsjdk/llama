@@ -24,20 +24,63 @@ void report(const char *stage, Qnn_ErrorHandle_t rc) {
 }
 
 Qnn_Tensor_t makeTensor(const char *name, Qnn_TensorType_t type,
-                        uint32_t *dims, uint32_t rank) {
+                        Qnn_DataType_t dataType, uint32_t *dims, uint32_t rank) {
     Qnn_Tensor_t t = QNN_TENSOR_INIT;
     t.version = QNN_TENSOR_VERSION_1;
     t.v1.name = name;
     t.v1.type = type;
     t.v1.dataFormat = QNN_TENSOR_DATA_FORMAT_FLAT_BUFFER;
-    t.v1.dataType = QNN_DATATYPE_FLOAT_32;
+    t.v1.dataType = dataType;
     t.v1.rank = rank;
     t.v1.dimensions = dims;
     t.v1.memType = QNN_TENSORMEMTYPE_RAW;
     return t;
 }
 
-int run(const std::string &libDir) {
+
+uint16_t f32ToF16(float f) {
+    uint32_t x; std::memcpy(&x, &f, sizeof(x));
+    const uint32_t sign = (x >> 16) & 0x8000u;
+    const uint32_t exp = (x >> 23) & 0xffu;
+    uint32_t mant = x & 0x7fffffu;
+    if (exp == 0xffu) return static_cast<uint16_t>(sign | (mant ? 0x7e00u : 0x7c00u));
+    int32_t e = static_cast<int32_t>(exp) - 127 + 15;
+    if (e >= 31) return static_cast<uint16_t>(sign | 0x7c00u);
+    if (e <= 0) {
+        if (e < -10) return static_cast<uint16_t>(sign);
+        mant |= 0x800000u;
+        const uint32_t shift = static_cast<uint32_t>(14 - e);
+        uint32_t sub = mant >> (shift + 13);
+        if ((mant >> (shift + 12)) & 1u) sub++;
+        return static_cast<uint16_t>(sign | sub);
+    }
+    uint16_t h = static_cast<uint16_t>(sign | (static_cast<uint32_t>(e) << 10) | (mant >> 13));
+    const uint32_t rem = mant & 0x1fffu;
+    if (rem > 0x1000u || (rem == 0x1000u && (h & 1u))) h++;
+    return h;
+}
+
+float f16ToF32(uint16_t h) {
+    const uint32_t sign = (static_cast<uint32_t>(h) & 0x8000u) << 16;
+    uint32_t e = (static_cast<uint32_t>(h) >> 10) & 0x1fu;
+    uint32_t mant = static_cast<uint32_t>(h) & 0x3ffu;
+    uint32_t x;
+    if (e == 0) {
+        if (mant == 0) x = sign;
+        else {
+            int32_t ee = -14;
+            while (!(mant & 0x400u)) { mant <<= 1; --ee; }
+            mant &= 0x3ffu;
+            x = sign | (static_cast<uint32_t>(ee + 127) << 23) | (mant << 13);
+        }
+    } else if (e == 31) {
+        x = sign | 0x7f800000u | (mant << 13);
+    } else {
+        x = sign | ((e - 15u + 127u) << 23) | (mant << 13);
+    }
+    float f; std::memcpy(&f, &x, sizeof(f)); return f;
+}
+\nint run(const std::string &libDir) {
     void *handle = dlopen((libDir + "/libQnnHtp.so").c_str(), RTLD_NOW | RTLD_GLOBAL);
     if (!handle) {
         const char *err = dlerror();
@@ -97,7 +140,7 @@ int run(const std::string &libDir) {
         report("contextCreate", rc);
         if (rc != QNN_SUCCESS || !context) { result = 8; goto cleanup; }
 
-        // A tiny real HTP matmul: A[2x3] * B[3x2] = C[2x2].
+        // A tiny real FP16 HTP matmul: A[2x3] * B[3x2] = C[2x2].
         // QNN tensor dimensions are innermost-first for this row-major layout.
         uint32_t da[2] = {3, 2}, db[2] = {2, 3}, dc[2] = {2, 2};
         Qnn_Tensor_t a = makeTensor("a", QNN_TENSOR_TYPE_APP_WRITE, da, 2);
