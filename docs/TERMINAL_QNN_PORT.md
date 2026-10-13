@@ -17,12 +17,21 @@ The Android-only wrapper is not portable: JNI entry points, Android logging, `Co
 
 - `npu/qnn_probe.cpp`: terminal-only provider/backend/device/context initialization probe.
 - `npu/qnn_matmul_smoke.cpp`: attempts a real FP16 QNN matmul graph and checks the result against a CPU reference.
+- `npu/fp16_utils.h` and `npu/test_fp16_utils.cpp`: shared FP16 conversion routines and edge-case tests, including subnormal and ties-to-even rounding.
 - `npu/CMakeLists.txt`: standalone build for the probe using QNN headers.
 - `scripts/bootstrap-upstream.sh`: obtains upstream `llama.cpp` source without building an APK.
 
 The initialization probe alone does not execute a graph. The separate `qnn-matmul-smoke` target now attempts a real HTP matmul and validates the result against a CPU reference. It is a standalone backend smoke test, not yet wired into llama.cpp; it has not been compiled or run on the target phone.
 
 ## Build the probe
+
+The FP16 conversion test does not need QNN headers and can be run independently:
+
+```sh
+c++ -std=c++17 -Wall -Wextra -Werror -pedantic npu/test_fp16_utils.cpp -o /tmp/test_fp16_utils
+/tmp/test_fp16_utils
+```
+
 
 On an AArch64 Termux environment with a compatible QNN header directory:
 
