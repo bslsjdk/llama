@@ -43,7 +43,7 @@ Use the same QNN header/runtime release family. A mismatched interface header an
 3. Add a GGML backend that implements buffer allocation, tensor support checks, graph planning, graph creation, graph execution, and synchronization. Start with one verified operation, not whole-model offload.
 4. Compare QNN output against CPU output for supported shapes and datatypes.
 5. Add explicit fallback to CPU for unsupported ops or failed initialization.
-5. Measure end-to-end token latency, memory, and stability on the actual phone. Measure peak runtime RAM and report it accurately; do not impose an arbitrary 4 GiB ceiling. The selected model, context, and available device memory determine viable settings.
+6. Measure end-to-end token latency, memory, and stability on the actual phone. Measure peak runtime RAM and report it accurately; do not impose an arbitrary 4 GiB ceiling. The selected model, context, and available device memory determine viable settings.
 7. Only advertise llama.cpp acceleration after a real GGML graph has executed on HTP and passed parity tests.
 
 ## Important known issue
