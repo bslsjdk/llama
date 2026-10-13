@@ -143,9 +143,9 @@ float f16ToF32(uint16_t h) {
         // A tiny real FP16 HTP matmul: A[2x3] * B[3x2] = C[2x2].
         // QNN tensor dimensions are innermost-first for this row-major layout.
         uint32_t da[2] = {3, 2}, db[2] = {2, 3}, dc[2] = {2, 2};
-        Qnn_Tensor_t a = makeTensor("a", QNN_TENSOR_TYPE_APP_WRITE, da, 2);
-        Qnn_Tensor_t b = makeTensor("b", QNN_TENSOR_TYPE_APP_WRITE, db, 2);
-        Qnn_Tensor_t c = makeTensor("c", QNN_TENSOR_TYPE_APP_READ, dc, 2);
+        Qnn_Tensor_t a = makeTensor("a", QNN_TENSOR_TYPE_APP_WRITE, QNN_DATATYPE_FLOAT_16, da, 2);
+        Qnn_Tensor_t b = makeTensor("b", QNN_TENSOR_TYPE_APP_WRITE, QNN_DATATYPE_FLOAT_16, db, 2);
+        Qnn_Tensor_t c = makeTensor("c", QNN_TENSOR_TYPE_APP_READ, QNN_DATATYPE_FLOAT_16, dc, 2);
 
         rc = f.graphCreate(context, "llama_qnn_matmul_smoke", nullptr, &graph);
         report("graphCreate", rc);
@@ -174,13 +174,14 @@ float f16ToF32(uint16_t h) {
         report("graphFinalize", rc);
         if (rc != QNN_SUCCESS) { result = 12; goto cleanup; }
 
-        const float av[6] = {1, 2, 3, 4, 5, 6};
-        const float bv[6] = {7, 8, 9, 10, 11, 12};
-        float cv[4] = {-999, -999, -999, -999};
+        const float av32[6] = {1, 2, 3, 4, 5, 6};
+        const float bv32[6] = {7, 8, 9, 10, 11, 12};
+        uint16_t av[6], bv[6], cv[4] = {0, 0, 0, 0};
+        for (size_t i = 0; i < 6; ++i) { av[i] = f32ToF16(av32[i]); bv[i] = f32ToF16(bv32[i]); }
         Qnn_Tensor_t ea = a, eb = b, ec = c;
-        ea.v1.clientBuf.data = const_cast<float *>(av);
+        ea.v1.clientBuf.data = av;
         ea.v1.clientBuf.dataSize = sizeof(av);
-        eb.v1.clientBuf.data = const_cast<float *>(bv);
+        eb.v1.clientBuf.data = bv;
         eb.v1.clientBuf.dataSize = sizeof(bv);
         ec.v1.clientBuf.data = cv;
         ec.v1.clientBuf.dataSize = sizeof(cv);
@@ -193,10 +194,11 @@ float f16ToF32(uint16_t h) {
         // CPU reference: [58,64;139,154]. Fail rather than silently claiming success.
         const float expected[4] = {58, 64, 139, 154};
         for (size_t i = 0; i < 4; ++i) {
-            const float err = std::fabs(cv[i] - expected[i]);
+            const float value = f16ToF32(cv[i]);
+            const float err = std::fabs(value - expected[i]);
             std::printf("out[%zu]=%.6f expected=%.6f abs_err=%.6f\n",
-                        i, cv[i], expected[i], err);
-            if (!std::isfinite(cv[i]) || err > 0.1f) {
+                        i, value, expected[i], err);
+            if (!std::isfinite(value) || err > 0.2f) {
                 std::fprintf(stderr, "ERR OUTPUT_MISMATCH index=%zu\n", i);
                 result = 14;
                 goto cleanup;
