@@ -16,7 +16,7 @@ The Android-only wrapper is not portable: JNI entry points, Android logging, `Co
 ## Current code in this repository
 
 - `npu/qnn_probe.cpp`: terminal-only provider/backend/device/context initialization probe.
-- `npu/qnn_matmul_smoke.cpp`: attempts a real FP32 QNN matmul graph and checks the result against a CPU reference.
+- `npu/qnn_matmul_smoke.cpp`: attempts a real FP16 QNN matmul graph and checks the result against a CPU reference.
 - `npu/CMakeLists.txt`: standalone build for the probe using QNN headers.
 - `scripts/bootstrap-upstream.sh`: obtains upstream `llama.cpp` source without building an APK.
 
