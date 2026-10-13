@@ -29,9 +29,8 @@ On an AArch64 Termux environment with a compatible QNN header directory:
 ```sh
 cmake -S npu -B build-qnn-probe -DQNN_INC=/path/to/QNN/include
 cmake --build build-qnn-probe -j1
-LD_LIBRARY_PATH=/path/to/qnn/libs:$LD_LIBRARY_PATH \
-  ./build-qnn-probe/qnn-probe /path/to/qnn/libs
-  ./build-qnn-probe/qnn-matmul-smoke /path/to/qnn/libs
+bash scripts/run-qnn-probe.sh /path/to/qnn/libs
+bash scripts/run-qnn-matmul-smoke.sh /path/to/qnn/libs
 ```
 
 Use the same QNN header/runtime release family. A mismatched interface header and runtime can fail before provider discovery.
