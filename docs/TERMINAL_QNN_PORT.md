@@ -40,7 +40,7 @@ Use the same QNN header/runtime release family. A mismatched interface header an
 2. Add a GGML backend that implements buffer allocation, tensor support checks, graph planning, graph creation, graph execution, and synchronization. Start with one verified operation, not whole-model offload.
 3. Compare QNN output against CPU output for supported shapes and datatypes.
 4. Add explicit fallback to CPU for unsupported ops or failed initialization.
-5. Measure end-to-end token latency, memory, and stability on the actual phone. Peak runtime RAM must stay below 4 GiB.
+5. Measure end-to-end token latency, memory, and stability on the actual phone. Measure peak runtime RAM and report it accurately; do not impose an arbitrary 4 GiB ceiling. The selected model, context, and available device memory determine viable settings.
 6. Only advertise acceleration after a real GGML graph has executed on HTP and passed parity tests.
 
 ## Important known issue
