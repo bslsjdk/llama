@@ -1,8 +1,6 @@
 #include <dlfcn.h>
 #include <cstdio>
-#include <cstdlib>
 #include <string>
-#include <vector>
 #include "QnnInterface.h"
 #include "QnnBackend.h"
 #include "QnnDevice.h"
@@ -18,20 +16,27 @@ void report(const char *stage, Qnn_ErrorHandle_t rc) {
                  static_cast<unsigned>(rc));
 }
 
+const char *loaderError() {
+    const char *err = dlerror();
+    return err ? err : "unknown";
+}
+
 int run(const std::string &libDir) {
     const std::string libPath = libDir + "/libQnnHtp.so";
     void *handle = dlopen(libPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
     if (!handle) {
         std::fprintf(stderr, "ERR DLOPEN path=%s reason=%s\n",
-                     libPath.c_str(), dlerror() ? dlerror() : "unknown");
+                     libPath.c_str(), loaderError());
         return 2;
     }
 
+    dlerror();
     auto getProviders = reinterpret_cast<GetProviders>(
         dlsym(handle, "QnnInterface_getProviders"));
-    if (!getProviders) {
+    const char *symError = dlerror();
+    if (!getProviders || symError) {
         std::fprintf(stderr, "ERR SYMBOL QnnInterface_getProviders missing: %s\n",
-                     dlerror() ? dlerror() : "unknown");
+                     symError ? symError : "null symbol");
         dlclose(handle);
         return 3;
     }
@@ -89,7 +94,7 @@ int run(const std::string &libDir) {
         return 8;
     }
 
-    std::printf("OK QNN_HPT_RUNTIME_INITIALIZED providers=%u backend_id=%u\n",
+    std::printf("OK QNN_HTP_RUNTIME_INITIALIZED providers=%u backend_id=%u\n",
                 count, kHtpBackendId);
     std::printf("NOTE This probe validates provider/backend/device/context initialization only; "
                 "it does not yet execute a graph or prove llama.cpp acceleration.\n");
