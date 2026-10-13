@@ -1,0 +1,25 @@
+name: QNN port source checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, feat/terminal-qnn-runtime]
+  workflow_dispatch:
+
+jobs:
+  fp16-conversion:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile FP16 helper tests
+        run: c++ -std=c++17 -Wall -Wextra -Werror -pedantic npu/test_fp16_utils.cpp -o /tmp/test_fp16_utils
+      - name: Run FP16 helper tests
+        run: /tmp/test_fp16_utils
+      - name: Check QNN graph execution path exists
+        run: |
+          grep -q 'QNN_OP_MAT_MUL' npu/qnn_matmul_smoke.cpp
+          grep -q 'graphAddNode' npu/qnn_matmul_smoke.cpp
+          grep -q 'graphFinalize' npu/qnn_matmul_smoke.cpp
+          grep -q 'graphExecute' npu/qnn_matmul_smoke.cpp
+          grep -q 'QNN_DATATYPE_FLOAT_16' npu/qnn_matmul_smoke.cpp

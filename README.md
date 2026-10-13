@@ -8,7 +8,7 @@ This repository is being prepared as a terminal-first Qualcomm Hexagon/QNN integ
 - Use `bslsjdk/mcnpu` as the reference for QNN/HTP initialization, provider discovery, backend/device/context lifetime, graph creation, and diagnostics.
 - Port the reusable native QNN runtime into a GGML backend or an explicitly selected offload path. Android-only JNI and `Context`/asset extraction code must not be copied into the terminal executable.
 - Keep CPU inference available as a safe fallback until a QNN operation is verified end-to-end.
-- Keep peak runtime RAM under 4 GiB on the target phone.
+- Do not impose an arbitrary 4 GiB runtime-RAM ceiling; support the available device memory and let the user choose model/ context sizes that fit their phone.
 - Never claim NPU acceleration until the terminal build demonstrates an actual graph execution and output parity.
 
 ## Current status
