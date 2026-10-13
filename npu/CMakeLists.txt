@@ -11,3 +11,10 @@ target_include_directories(qnn-probe PRIVATE "${QNN_INC}")
 target_compile_features(qnn-probe PRIVATE cxx_std_17)
 target_compile_options(qnn-probe PRIVATE -Wall -Wextra -Wpedantic)
 target_link_libraries(qnn-probe PRIVATE dl)
+
+# Executes one tiny FP32 matmul graph on HTP and checks its output against CPU.
+add_executable(qnn-matmul-smoke qnn_matmul_smoke.cpp)
+target_include_directories(qnn-matmul-smoke PRIVATE "${QNN_INC}")
+target_compile_features(qnn-matmul-smoke PRIVATE cxx_std_17)
+target_compile_options(qnn-matmul-smoke PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(qnn-matmul-smoke PRIVATE dl)
