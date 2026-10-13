@@ -50,8 +50,11 @@ uint16_t f32ToF16(float f) {
         if (e < -10) return static_cast<uint16_t>(sign);
         mant |= 0x800000u;
         const uint32_t shift = static_cast<uint32_t>(14 - e);
-        uint32_t sub = mant >> (shift + 13);
-        if ((mant >> (shift + 12)) & 1u) sub++;
+        uint32_t sub = mant >> shift;
+        const uint32_t mask = (1u << shift) - 1u;
+        const uint32_t rem = mant & mask;
+        const uint32_t halfway = 1u << (shift - 1u);
+        if (rem > halfway || (rem == halfway && (sub & 1u))) sub++;
         return static_cast<uint16_t>(sign | sub);
     }
     uint16_t h = static_cast<uint16_t>(sign | (static_cast<uint32_t>(e) << 10) | (mant >> 13));
